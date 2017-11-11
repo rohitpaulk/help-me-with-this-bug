@@ -58,6 +58,7 @@ def send_fd(socket, name, fd)
   socket.gets
 end
 
+send_fd(our_end, "STDERR", STDERR)
 send_fd(our_end, "STDOUT", STDOUT)
 send_fd(our_end, "STDIN", STDIN)
 
@@ -89,6 +90,19 @@ puts "Okay! Handing over control. See you once the spawned process exits".blue
 puts
 our_end.puts
 
-Process.wait(pid)
-puts "Child process exited!".blue
+def is_alive?(pid)
+  begin
+    Process.kill(0, pid)
+    true
+  rescue Errno::ESRCH
+    false
+  end
+end
 
+loop do
+  puts "Has not exited"
+  sleep 0.5
+  break unless is_alive?(pid)
+end
+
+puts "Child process exited!".blue

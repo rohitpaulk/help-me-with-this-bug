@@ -1,5 +1,7 @@
 require "./common"
 
+# Prevent signals from automatically being forwarded
+# Process.setpgrp
 Process.setpgrp
 
 parent = UNIXSocket.for_fd(3)
@@ -20,6 +22,7 @@ def receive_signal(socket)
   Process.kill(signal, Process.pid) # Send to self
 end
 
+parent_stderr = receive_fd(parent)
 parent_stdout = receive_fd(parent)
 parent_stdin = receive_fd(parent)
 
@@ -33,10 +36,12 @@ thr = Thread.new do
   end
 end
 
+STDERR.reopen(parent_stderr)
 STDOUT.reopen(parent_stdout)
 STDIN.reopen(parent_stdin)
 
 at_exit do
+  STDERR.close
   STDOUT.close
   STDIN.close
 end
@@ -48,5 +53,10 @@ puts <<~MSG.yellow
   Let's first enter 3 lines normally, without hitting CTRL+z in the middle.
 MSG
 
+sleep 2
+puts "HEY!"
+
+puts "Calling gets"
+STDIN.gets
+
 # CommonFunctions.echo_input_back
-sleep 50
